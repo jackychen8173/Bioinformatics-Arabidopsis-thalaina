@@ -1,0 +1,55 @@
+Indexing the Reference Genome
+STAR \
+    --runMode genomeGenerate \
+    --genomeDir STAR_Index \
+    --genomeFastaFiles  arabidopsis.ref.genome.fna \
+    --sjdbGTFfile   arabidopsis.ref.genes.gtf \
+    --sjdbOverhang 100 \
+    --runThreadN 20
+
+Aligned Sequences to the Reference
+#Alignment for experimental (vir) group
+#!/bin/bash
+
+for vir_file in $(ls ~/Project/Datasets/vir/*_R1.fastq.gz); do \
+        if [[ $vir_file == *_R1.fastq.gz ]]; then \
+                vir_R1=$(basename "$vir_file")        #output = *_R1.fastq.gz
+                vir_R1_name=${vir_R1%%_*}        #output = *_R1
+                vir_R2=$(basename "~/Project/Datasets/vir/${vir_R1_name}_R2.fastq.gz")                    #output = *_R2.fastq.gz; to find the correct R1 pair. If read pair is found, then align.
+                if [[ $vir_R2 == $(basename ~/Project?Datasets/vir/*_R2.fastq.gz) ]]; then \
+                        STAR \
+                        --genomeDir ~/Project/Reference_Genome/STAR_index \
+                        --readFilesIn ~/Project/Datasets/vir/${vir_R1} ~/Project/Datasets/vir/${vir_R2} \
+                        --readFilesCommand zcat \
+                        --outFileNamePrefix ~/Project/Datasets/vir/STAR_vir_alignments/"${vir_R1_name}_" \
+                        --outSAMtype BAM SortedByCoordinate \
+                        --runThreadN 16 \
+                        --quantMode GeneCounts
+                        echo "$vir_R1_name finished"
+                else echo "$vir_R1_name" "no R2 pair"
+                fi
+        fi
+done
+
+#Alignment for control (mock) group
+#!/bin/bash
+
+for mock_file in $(ls ~/Project/Datasets/mock/*_R1.fastq.gz); do \
+        if [[ $mock_file == *_R1.fastq.gz ]]; then \
+                mock_R1=$(basename "$mock_file")      #output = *_R1.fastq.gz
+                mock_R1_name=${mock_R1%%_*}      #output = *_R1
+                mock_R2=$(basename "~/Project/Datasets/mock/${mock_R1_name}_R2.fastq.gz")                                                                        #output = *_R2.fastq.gz; to find the correct R1 pair. If read pair is found, then align.
+                if [[ $mock_R2 == $(basename -- "~/Project/Datasets/mock/*_R2.fastq.gz") ]]; then \
+                        STAR \
+                        --genomeDir ~/Project/Reference_Genome/STAR_index \
+                        --readFilesIn ~/Project/Datasets/mock/${mock_R1} ~/Project/Datasets/mock/${mock_R2} \
+                        --readFilesCommand zcat \
+                        --outFileNamePrefix ~/Project/Datasets/mock/STAR_mock_alignment/"${mock_R1_name}_" \
+                        --outSAMtype BAM SortedByCoordinate \
+                        --runThreadN 20 \
+                        --quantMode GeneCounts
+                        echo "$mock_R1_name finished"
+                else echo "$mock_R1_name" "no R2 pair"
+                fi
+        fi
+done
